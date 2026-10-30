@@ -13,7 +13,7 @@
     "development_status": "Production/Stable",
     "category": "Tools",
     "data": [
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "security/res_groups.xml",
         "serv_config.xml",
     ],
