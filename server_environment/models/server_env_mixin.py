@@ -423,14 +423,32 @@ class ServerEnvMixin(models.AbstractModel):
             self._server_env_add_default_field(field)
             self._server_env_transform_field_to_read_from_env(field)
             self._server_env_add_is_editable_field(field)
-        # Odoo 20: the update order of the fields is computed before
-        # _post_model_setup__(); register the fields added above
+        self._server_env_update_fields_order()
+        return super()._post_model_setup__()
+
+    @api.model
+    def _server_env_update_fields_order(self):
+        """Odoo 20: the update order of the fields is computed before
+        _post_model_setup__(): register the fields added above.
+
+        The default field (sparse, with its own inverse) is updated before the
+        env-computed field, whose inverse writes the value given by the user
+        into it: otherwise the default value of the default field would
+        overwrite it on create.
+        """
         model_cls = self.env.registry[self._name]
         update_order = model_cls._fields_update_order__
         for index, field in enumerate(model_cls._fields.values()):
             if field not in update_order:
                 update_order[field] = (field.write_sequence, index)
-        return super()._post_model_setup__()
+        for field_name in self._server_env_fields:
+            default_fname = self._server_env_default_fieldname(field_name)
+            if default_fname and default_fname in model_cls._fields:
+                base_order = update_order[model_cls._fields[field_name]]
+                update_order[model_cls._fields[default_fname]] = (
+                    base_order[0],
+                    base_order[1] - 0.5,
+                )
 
     @api.model
     def _preserve_not_env_managed_data(self, field_name_list):
