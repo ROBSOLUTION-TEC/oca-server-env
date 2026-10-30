@@ -209,13 +209,11 @@ class ServerConfiguration(models.TransientModel):
                 sparse="config",
                 readonly=True,
             )
-            setattr(
-                ServerConfiguration,
-                col_name,
-                tmp_field,
-            )
-            tmp_field.name = col_name
-            ServerConfiguration._field_definitions.append(tmp_field)
+            if col_name not in vars(ServerConfiguration):
+                # Odoo 20: __set_name__ registers the field definition with
+                # its module (shared field setup needs it)
+                setattr(ServerConfiguration, col_name, tmp_field)
+                tmp_field.__set_name__(ServerConfiguration, col_name)
             cls._conf_defaults[col_name] = value
 
     @classmethod
