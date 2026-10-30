@@ -423,6 +423,13 @@ class ServerEnvMixin(models.AbstractModel):
             self._server_env_add_default_field(field)
             self._server_env_transform_field_to_read_from_env(field)
             self._server_env_add_is_editable_field(field)
+        # Odoo 20: the update order of the fields is computed before
+        # _post_model_setup__(); register the fields added above
+        model_cls = self.env.registry[self._name]
+        update_order = model_cls._fields_update_order__
+        for index, field in enumerate(model_cls._fields.values()):
+            if field not in update_order:
+                update_order[field] = (field.write_sequence, index)
         return super()._post_model_setup__()
 
     @api.model
